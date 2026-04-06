@@ -3,110 +3,187 @@
 
 ## Overview
 
-The final project simulates a professional client-developer relationship. You will:
+## MOTS — Memory of the Soul
 
-1. **Propose your own project** — define the problem, write the spec, create a revenue model, review all code, and accept (or reject) deliverables. You never write code on your own project.
-2. **Develop someone else's project** — architect the system, implement it using agentic engineering (AI-first development), write tests, and deliver a working product.
+> *"Everyone carries words they never got to say."*
 
-All collaborations happen through GitHub — Issues, Pull Requests, and code review. 
----
+**MOTS** is a grief-tech web application that helps people find emotional closure by reconstructing the voice of a lost loved one from real conversation history. Users complete a short five-step survey and paste actual chat text; MOTS produces a deeply personal letter written *in the loved one's voice* — grounded in real memories, real tone, and real words — and enables ongoing dialogue that holds that voice steady across the entire session.
 
-## Why This Model?
-
-**For Proposers (Client role):** A key part of software development is defining what to build, evaluating whether it was built correctly, and giving feedback that improves the product. These are the skills of a product manager, a startup founder, or anyone who hires engineers.
-
-**For Developers (Engineer role):** Real engineering means building to someone else's spec, not your own vision. You must interpret requirements, negotiate scope, communicate progress, and respond to feedback — all while using AI tools effectively.
+No sign-up required. No login wall. Just the conversation you never got to finish.
 
 ---
 
-## The Two Roles
+## What It Does
 
-### Role 1: Proposer (Client / Product Owner)
-
-You are the client. You define what gets built and evaluate whether it meets your standards.
-
-**Your responsibilities:**
-- Write a Project Pitch with a revenue model
-- Create a detailed `SPEC.md` with user stories and acceptance criteria
-- Decompose the spec into GitHub Issues with testable acceptance criteria
-- Set up branch protection on your project repo (main requires 1 review)
-- Review every Pull Request your developer submits
-- File bug reports with reproduction steps and screenshots
-- Conduct acceptance testing at each gate
-- Present the problem, revenue model, and development story at Demo Day
-
-**You never write implementation code on your own project.**
-
-### Role 2: Developer (AI-First Freelance Engineer)
-
-You are the engineer. You build someone else's vision using agentic engineering.
-
-**Your responsibilities:**
-- Browse project pitches and express interest
-- Write an `ARCHITECTURE.md` with C4 diagram, data model, tech stack justification, and agentic engineering plan
-- Set up `CLAUDE.md` and `.cursorrules` for effective AI-assisted development
-- Implement features via Pull Requests, each referencing a GitHub Issue
-- Use agentic engineering (Cursor, Claude Code) for all development
-- Write automated tests and conduct security review
-- Respond to all PR review comments and bug reports
-- Present architecture and agentic engineering approach at Demo Day
-
-**Your skill is not writing code by hand — it is orchestrating AI to produce quality code, then verifying the output.**
-
----
-
-## GIX Bucks Economy
-
-Every project operates in a simulated economy that teaches budget management, scope-cost tradeoffs, and market validation.
-
-**See [`gix-bucks.md`](./gix-bucks.md) for full rules and worked examples.**
-
-Quick summary:
-- Every student starts with **100 GIX Bucks**
-- Proposers pay developers a **negotiated development fee**
-- At Demo Day, all students distribute their remaining bucks and those earned as developers as **investments** in projects they believe are viable
-- **Net Profit = Investment Received - Development Fee Paid**
-- Positive net profit is normalized to **bonus points**
-
----
-
-## Marketplace Matching
-
-If you are not hired by any client, or you cannot find a developer, let your instructor and TA know.
+1. **Guided intake** — A five-step wizard collects names and nicknames, a core value, an emotional register ("Soul Weather"), a sample of real chat history for style extraction, and the words the user never got to say.
+2. **Letter generation** — A single Gemini `generateContent()` call returns both a personal letter *and* a structured persona profile (speaking style, verbal quirks, extracted memories, tone) as structured JSON.
+3. **In-character chat** — Gemini's `startChat()` loads the AI-generated persona profile as `systemInstruction`, locking the reconstructed personality in place for the entire session. Responses are kept short (1–3 sentences) to feel like texting, not a monologue.
 
 ---
 
 ## Tech Stack
 
-The tech stack is **negotiated between proposer and developer**. Some examples are given below:
+| Layer | Technology |
+|---|---|
+| Frontend | Vanilla HTML / CSS / JavaScript (Vercel) |
+| Backend | Node.js + Express.js (Render) |
+| Database | PostgreSQL on Neon via Prisma ORM |
+| AI | Google Gemini 2.5 Flash via `@google/generative-ai` |
 
-| Option | When to use |
-|--------|------------|
-| **Next.js + Supabase** | Multi-user apps, apps needing auth, database-heavy projects |
-| **Python + Streamlit** | Data-focused apps, single-user tools, rapid prototyping |
-| **Custom (pre-approved)** | Other stacks require written instructor approval by end of Week 3 |
-
-The proposer states their stack preference in the pitch. The developer may counter-propose with justification. The final choice is recorded in the `ARCHITECTURE.md`.
+All Gemini API calls are **server-side only**. No API keys are ever sent to the browser.
 
 ---
 
-## Conflict Resolution
+## Reference Prototype
 
-### Contract Terms
+A working prototype built at the Gemini 3 Hackathon is available at:
+- Live app: [mots-phi.vercel.app](https://mots-phi.vercel.app)
+- Devpost write-up: [devpost.com/software/mots](https://devpost.com/software/mots)
 
-The `SPEC.md` + agreed GIX Bucks fee constitute the project contract. Both parties should commit to:
+---
 
-- **Proposer:** Review PRs within 48 hours. Provide specific, actionable feedback. Respond to developer questions within 48 hours.
-- **Developer:** Submit at least one PR per 2-week period. Respond to review comments within 48 hours. Keep the proposer informed of blockers.
+## Team
 
-### Escalation Process
+> **Course:** TECHIN510 | **Deliverables:** Client-00 (README) + Client-01 (SPEC.md)
 
-1. If either party is unresponsive or breaches the contract, the other creates a GitHub Issue tagged `escalation` in the project repo.
-2. Instructor reviews the GitHub audit trail (PR timestamps, Issue activity, review comments) within 1 week.
-3. Instructor mediates and documents the outcome.
+| Role | Name |
+|---|---|
+| PM / Client | Wei Chang |
+| Developer | Xirui Zhu |
 
-### Grade Impact
+**Agreed Development Fee:** *20. | Might change it later*
 
-- **Communication & Professionalism** are graded. Ghosting, persistent non-responsiveness may result in point deduction. 
+---
+
+## Project Timeline
+
+This project runs within the TECHIN510 quarter. **Demo Day is Week 10.** The developer and PM have agreed to the following milestones, anchored to course weeks:
+
+### Check-in 1 — Architecture & Scaffolding (End of Week 6)
+
+*Corresponds to developer's Architecture Pull Request (Developer-01). Client must review within 48 hours.*
+
+**Required progress from developer:**
+- Repository is initialised with the agreed folder structure (frontend + backend separated)
+- Express.js server is running locally and deployable to Render
+- Prisma schema is defined with the `sessions` table (UUID, JSONB fields for survey inputs, persona profile, letter, and chat history, and a status enum)
+- Neon database is provisioned and connected
+- Environment variables are documented in `.env.example` (no secrets committed)
+- Initial Architecture Pull Request is open for PM review
+- Landing page skeleton is live on Vercel (static HTML, no AI yet)
+
+**PM obligation:** Client reviews and provides written feedback on the Architecture PR within **48 hours** of it being opened.
+
+---
+
+### Check-in 2 — Core AI Pipeline Working (End of Week 7)
+
+**Required progress from developer:**
+- Five-step survey form is complete with client-side validation
+- `POST /api/sessions` route creates a UUID session and triggers async Phase 1 Gemini generation
+- `GET /api/sessions/:id/status` polling endpoint returns letter and persona profile once ready
+- Letter reveal screen renders with loading state and emotional reveal UI
+- Phase 1 JSON output is correctly parsed (markdown fences stripped) and stored in the database
+- PM can complete the full flow end-to-end: survey → loading state → letter display
+- Developer responds to any client feedback within 48 hours
+
+---
+
+### Check-in 3 — Feature Complete & Demo-Ready (End of Week 9)
+
+*One week before Demo Day — all features shipped, client can rehearse the demo.*
+
+**Required progress from developer:**
+- Phase 2 `startChat()` is implemented with persona loaded as `systemInstruction`
+- Chat history normalisation is in place (user-role placeholder prepended per Gemini requirement)
+- Chat UI is functional: user can send messages and receive 1–3 sentence in-character replies
+- `maxOutputTokens: 300` and `temperature: 0.85` are configured
+- Error states are handled gracefully across all screens
+- Full user flow is tested end-to-end (landing → survey → letter → chat)
+- All three screens are mobile-responsive
+- Final deployment is live on Vercel (frontend) and Render (backend)
+- Handoff documentation is complete so client can demo independently
+
+---
+
+### Demo Day — Week 10
+
+- **Client (Xirui)** presents the final product at the demo fair
+- GIX Bucks investment by all students happens simultaneously during Demo Day
+- Client cannot invest in their own project or the project they developed as a developer
+- All remaining GIX Bucks must be invested; net profit (investment received − 100) converts to bonus points
+
+---
+
+## Getting Started (Developer Setup)
+
+```bash
+# Clone the repo
+git clone <repo-url>
+cd mots
+
+# Install backend dependencies
+cd backend
+npm install
+cp .env.example .env  # Fill in GEMINI_API_KEY and DATABASE_URL
+
+# Run database migrations
+npx prisma migrate dev
+
+# Start the backend
+npm run dev
+
+# In a separate terminal, open the frontend
+cd ../frontend
+# Open index.html in your browser or serve with a static server
+```
+
+---
+
+## Environment Variables
+
+```
+GEMINI_API_KEY=       # Google Gemini API key (server-side only, never expose to client)
+DATABASE_URL=         # Neon PostgreSQL connection string
+PORT=3001             # Express server port
+FRONTEND_ORIGIN=      # Vercel frontend URL (for CORS config)
+```
+
+---
+
+## Project Structure (Expected)
+
+```
+mots/
+├── frontend/
+│   ├── index.html          # Landing page
+│   ├── survey.html         # Five-step intake form
+│   ├── letter.html         # Letter reveal + chat screen
+│   ├── css/
+│   └── js/
+├── backend/
+│   ├── src/
+│   │   ├── routes/
+│   │   │   ├── sessions.js   # POST /api/sessions, GET /api/sessions/:id/status
+│   │   │   └── chat.js       # POST /api/sessions/:id/chat
+│   │   ├── services/
+│   │   │   ├── gemini.js     # generateContent() + startChat() wrappers
+│   │   │   └── persona.js    # JSON fence stripping + history normalisation
+│   │   └── index.js
+│   ├── prisma/
+│   │   └── schema.prisma
+│   └── .env.example
+└── README.md
+```
+
+---
+
+## Out of Scope (MVP)
+
+- Voice / audio output
+- Multimodal image or screenshot upload
+- Multi-user or shared memorial sessions
+- User accounts or authentication
+- Grief counselor integrations
 
 ---
