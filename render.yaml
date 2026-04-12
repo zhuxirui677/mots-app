@@ -1,0 +1,20 @@
+# Render deployment spec for MOTS backend
+# Push this repo to GitHub, then connect it on render.com → "New Web Service"
+# Render will detect this file automatically.
+
+services:
+  - type: web
+    name: mots-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate
+    startCommand: npm start
+    plan: free              # upgrade when ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      # Set these as SECRET values in the Render dashboard — do NOT hardcode here:
+      # DATABASE_URL, GEMINI_API_KEY, FRONTEND_ORIGIN
+    healthCheckPath: /health

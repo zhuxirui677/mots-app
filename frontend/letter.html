@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>A letter for you — MOTS</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="stylesheet" href="css/letter.css"/>
+</head>
+<body class="letter-page">
+
+  <canvas id="canvas-bg" aria-hidden="true"></canvas>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <!-- ── Loading screen ────────────────────────────────────── -->
+  <div id="loading-screen" role="status" aria-live="polite">
+    <!-- Mini companion while waiting for API -->
+    <div class="loading-companion">
+      <canvas id="loading-bunny" width="160" height="160" aria-hidden="true"></canvas>
+    </div>
+    <p class="loading-text" id="loadingText">Connecting to their soul</p>
+    <div class="loading-dots" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <!-- ── "1 NEW MESSAGE" reveal ─────────────────────────────── -->
+  <div id="new-msg-banner" role="dialog" aria-modal="true" aria-label="New message arrived">
+    <div class="new-msg-card" tabindex="0">
+      <span class="new-msg-badge">1 new message</span>
+      <h1 class="new-msg-headline">A letter arrived<br>for you.</h1>
+      <p class="new-msg-sub" id="newMsgFrom"></p>
+      <p class="new-msg-tap">tap anywhere to read</p>
+    </div>
+  </div>
+
+  <!-- ── Conversation layout ───────────────────────────────── -->
+  <div class="convo-layout" id="convoLayout">
+
+    <!-- Nav overlay (sits above the companion stage) -->
+    <header class="site-header convo-header">
+      <nav class="top-nav" aria-label="Main navigation">
+        <a href="index.html" class="nav-item">THE GARDEN</a>
+        <span class="nav-sep" aria-hidden="true">·</span>
+        <span class="nav-item active">MEMORY</span>
+        <span class="nav-sep" aria-hidden="true">·</span>
+        <span class="nav-item">MUSIC</span>
+        <span class="nav-sep" aria-hidden="true">·</span>
+        <span class="nav-item">INFO</span>
+      </nav>
+      <div class="gemini-badge">
+        <span class="gemini-dot" aria-hidden="true"></span>
+        <span class="gemini-label" id="headerName">Gemini</span>
+      </div>
+    </header>
+
+    <!-- ── Companion stage — bunny at top ─────────────────── -->
+    <div class="companion-stage" id="companionStage">
+      <canvas id="letter-bunny" aria-hidden="true" aria-label="Your companion"></canvas>
+      <!-- Bottom fade so companion blends into content below -->
+      <div class="companion-fade" aria-hidden="true"></div>
+    </div>
+
+    <!-- ── Scrollable messages ────────────────────────────── -->
+    <div class="messages-area" id="messagesArea">
+
+      <!-- Initial letter (styled as the first AI speech bubble) -->
+      <section class="letter-section" id="letterSection" aria-labelledby="letterFrom">
+        <p class="letter-from" id="letterFrom"></p>
+        <div class="letter-body" id="letterBody"></div>
+
+        <!-- Action row under the letter -->
+        <div class="letter-actions" id="letterActions" style="display:none">
+          <button class="btn-action-pill" id="btnReply">↩ reply</button>
+          <button class="btn-action-pill" id="btnSaveMemory">⭐ save to memories</button>
+        </div>
+      </section>
+
+      <!-- Chat messages (continue the conversation) -->
+      <section class="chat-section" id="chatSection" aria-label="Continue the conversation">
+        <p class="chat-divider">— continue the conversation —</p>
+        <div class="messages" id="messages" aria-live="polite" aria-atomic="false"></div>
+      </section>
+
+      <!-- Error fallback -->
+      <section id="errorSection" style="display:none">
+        <div class="error-msg">
+          <p>Something went wrong generating the letter.</p>
+          <p><a href="survey.html">← Start over</a></p>
+        </div>
+      </section>
+
+      <!-- Bottom spacer for fixed input bar -->
+      <div style="height:90px" aria-hidden="true"></div>
+    </div>
+
+  </div><!-- /convo-layout -->
+
+  <!-- ── Fixed bottom input bar ─────────────────────────────── -->
+  <div class="chat-input-bar" id="chatBar" style="display:none">
+    <div class="chat-input-inner">
+      <textarea
+        class="chat-textarea"
+        id="chatInput"
+        rows="1"
+        placeholder="type here…"
+        aria-label="Your message"
+      ></textarea>
+      <button class="btn-mic" id="btnMic" aria-label="Voice input" title="Voice input">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+          <rect x="9" y="2" width="6" height="11" rx="3"/>
+          <path d="M5 10a7 7 0 0 0 14 0"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="9"  y1="22" x2="15" y2="22"/>
+        </svg>
+      </button>
+      <button class="btn-send" id="btnSend" disabled aria-label="Send">→</button>
+    </div>
+  </div>
+
+  <script>window.MOTS_API = 'http://localhost:3001';</script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="js/canvas.js"></script>
+  <script src="js/companion.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/letter.js"></script>
+
+  <script>
+    /* Init companion once DOM is ready (loading screen still visible) */
+    window.MOTS.initCompanion('loading-bunny',  { size: 160, compact: true });
+    window.MOTS.initCompanion('letter-bunny',   { size: 300, compact: false });
+
+    /* Resize letter-bunny canvas to fill the companion-stage */
+    (function () {
+      const cvs   = document.getElementById('letter-bunny');
+      const stage = document.getElementById('companionStage');
+      function sizeCanvas() {
+        const w = stage.clientWidth;
+        const s = Math.min(w, 360);
+        cvs.style.width  = s + 'px';
+        cvs.style.height = s + 'px';
+      }
+      sizeCanvas();
+      window.addEventListener('resize', sizeCanvas);
+    })();
+  </script>
+
+</body>
+</html>
