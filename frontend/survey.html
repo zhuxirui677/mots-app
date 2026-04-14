@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tell us about them — MOTS</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="stylesheet" href="css/survey.css"/>
+  <style>
+    /* ── Survey companion (floating bunny in corner) ────────── */
+    .survey-companion-wrap {
+      position: fixed;
+      top: 3.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 40;
+      pointer-events: none;
+      opacity: 0;
+      animation: companion-in 1s var(--ease-out) .5s both;
+    }
+
+    @keyframes companion-in {
+      from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    #survey-bunny {
+      display: block;
+      width: 96px;
+      height: 96px;
+      filter: drop-shadow(0 0 16px rgba(100,160,255,.25));
+    }
+  </style>
+</head>
+<body class="survey-page">
+
+  <canvas id="canvas-bg" aria-hidden="true"></canvas>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar" id="progressBar" style="width:20%"></div>
+
+  <!-- Back -->
+  <button class="btn-back" id="btnBack" aria-label="Go back">← back</button>
+
+  <!-- Floating companion bunny (centered top) -->
+  <div class="survey-companion-wrap" aria-hidden="true">
+    <canvas id="survey-bunny"></canvas>
+  </div>
+
+  <!-- Gemini badge -->
+  <div class="survey-gemini" aria-label="Gemini AI active">
+    <span class="gemini-dot" aria-hidden="true"></span>
+    <span class="gemini-label">Gemini</span>
+  </div>
+
+  <!-- Step counter -->
+  <div class="step-counter" id="stepCounter" aria-live="polite">1 / 5</div>
+
+  <!-- ── Steps ───────────────────────────────────────────────── -->
+  <main class="steps-wrapper" id="stepsWrapper">
+
+    <!-- Step 1 -->
+    <section class="step-panel active" data-step="1" aria-labelledby="q1">
+      <div>
+        <p class="step-label">Step 1 of 5</p>
+        <h1 class="step-question" id="q1">Who are we writing to?</h1>
+        <p class="step-hint">We'll use these to anchor their identity in everything we write.</p>
+      </div>
+      <div class="field-group">
+        <div class="field-row">
+          <div class="field">
+            <label for="theirName">Their name</label>
+            <input id="theirName" type="text" placeholder="e.g. Grandma Rose" autocomplete="off"/>
+          </div>
+          <div class="field">
+            <label for="theirNickname">What they called you <span style="opacity:.42">(optional)</span></label>
+            <input id="theirNickname" type="text" placeholder="e.g. Sunshine, Kiddo" autocomplete="off"/>
+          </div>
+        </div>
+        <div class="field">
+          <label for="relationship">Your relationship</label>
+          <input id="relationship" type="text" placeholder="e.g. My grandmother, my best friend, my dad" autocomplete="off"/>
+        </div>
+        <div class="field">
+          <label for="yourPronouns">Their pronouns <span style="opacity:.42">(optional)</span></label>
+          <input id="yourPronouns" type="text" placeholder="e.g. she/her, he/him, they/them" autocomplete="off"/>
+        </div>
+      </div>
+      <button class="btn-continue" id="next1" disabled>
+        Continue <span class="btn-continue__icon" aria-hidden="true">→</span>
+      </button>
+    </section>
+
+    <!-- Step 2 -->
+    <section class="step-panel" data-step="2" aria-labelledby="q2">
+      <div>
+        <p class="step-label">Step 2 of 5</p>
+        <h2 class="step-question" id="q2">What was their core principle?</h2>
+        <p class="step-hint">The value they lived by — even if they never said it out loud.</p>
+      </div>
+      <div class="card-grid" role="radiogroup" aria-labelledby="q2">
+        <label class="choice-card" data-value="Radical Honesty">
+          <input type="radio" name="coreValue" value="Radical Honesty" hidden/>
+          <span class="choice-card__glyph">◈</span>
+          <span class="choice-card__title">Radical Honesty</span>
+          <span class="choice-card__desc">They told you the truth even when it hurt. Directness was their love language.</span>
+        </label>
+        <label class="choice-card" data-value="Unconditional Kindness">
+          <input type="radio" name="coreValue" value="Unconditional Kindness" hidden/>
+          <span class="choice-card__glyph">◇</span>
+          <span class="choice-card__title">Unconditional Kindness</span>
+          <span class="choice-card__desc">They made everyone feel seen. Warmth came naturally, without conditions.</span>
+        </label>
+        <label class="choice-card" data-value="Unbound Freedom">
+          <input type="radio" name="coreValue" value="Unbound Freedom" hidden/>
+          <span class="choice-card__glyph">◎</span>
+          <span class="choice-card__title">Unbound Freedom</span>
+          <span class="choice-card__desc">They lived on their own terms. Adventure and independence defined them.</span>
+        </label>
+        <label class="choice-card" data-value="Absolute Perfection">
+          <input type="radio" name="coreValue" value="Absolute Perfection" hidden/>
+          <span class="choice-card__glyph">✦</span>
+          <span class="choice-card__title">Absolute Perfection</span>
+          <span class="choice-card__desc">Everything they touched, they refined. Standards were how they showed they cared.</span>
+        </label>
+      </div>
+      <button class="btn-continue" id="next2" disabled>
+        Continue <span class="btn-continue__icon" aria-hidden="true">→</span>
+      </button>
+    </section>
+
+    <!-- Step 3 -->
+    <section class="step-panel" data-step="3" aria-labelledby="q3">
+      <div>
+        <p class="step-label">Step 3 of 5</p>
+        <h2 class="step-question" id="q3">If their soul were weather, what would it feel like?</h2>
+        <p class="step-hint">This shapes the emotional register of everything they say.</p>
+      </div>
+      <div class="card-grid" role="radiogroup" aria-labelledby="q3">
+        <label class="choice-card" data-value="Morning Sun">
+          <input type="radio" name="soulWeather" value="Morning Sun" hidden/>
+          <span class="choice-card__glyph">☀</span>
+          <span class="choice-card__title">Morning Sun</span>
+          <span class="choice-card__desc">Steady warmth. Gentle light. The kind of presence that made things feel possible.</span>
+        </label>
+        <label class="choice-card" data-value="Midnight Rain">
+          <input type="radio" name="soulWeather" value="Midnight Rain" hidden/>
+          <span class="choice-card__glyph">◐</span>
+          <span class="choice-card__title">Midnight Rain</span>
+          <span class="choice-card__desc">Deep and quiet. Emotion ran beneath the surface. They understood things others couldn't.</span>
+        </label>
+        <label class="choice-card" data-value="Wild Wind">
+          <input type="radio" name="soulWeather" value="Wild Wind" hidden/>
+          <span class="choice-card__glyph">≋</span>
+          <span class="choice-card__title">Wild Wind</span>
+          <span class="choice-card__desc">Unpredictable, alive, magnetic. Their energy filled every room they entered.</span>
+        </label>
+        <label class="choice-card" data-value="Winter Fire">
+          <input type="radio" name="soulWeather" value="Winter Fire" hidden/>
+          <span class="choice-card__glyph">⌾</span>
+          <span class="choice-card__title">Winter Fire</span>
+          <span class="choice-card__desc">Contained intensity. Fierce under calm. Their love was quiet but absolute.</span>
+        </label>
+      </div>
+      <button class="btn-continue" id="next3" disabled>
+        Continue <span class="btn-continue__icon" aria-hidden="true">→</span>
+      </button>
+    </section>
+
+    <!-- Step 4 -->
+    <section class="step-panel" data-step="4" aria-labelledby="q4">
+      <div>
+        <p class="step-label">Step 4 of 5</p>
+        <h2 class="step-question" id="q4">Paste a few lines of how they used to write.</h2>
+        <p class="step-hint">
+          Real messages, texts, emails — anything in their voice.
+          Even 3–4 lines is enough. This is how we learn their rhythm.
+        </p>
+      </div>
+      <div class="field">
+        <label for="chatSample">Their words <span style="opacity:.42">(optional but makes a big difference)</span></label>
+        <textarea id="chatSample" class="tall"
+          placeholder="e.g.&#10;hey!! did you eat today?? don't forget to take care of yourself ok&#10;love u lots 💛&#10;&#10;— or any real message they sent you"></textarea>
+      </div>
+      <button class="btn-continue" id="next4">
+        Continue <span class="btn-continue__icon" aria-hidden="true">→</span>
+      </button>
+    </section>
+
+    <!-- Step 5 -->
+    <section class="step-panel" data-step="5" aria-labelledby="q5">
+      <div>
+        <p class="step-label">Step 5 of 5</p>
+        <h2 class="step-question" id="q5">What did you never get to say?</h2>
+        <p class="step-hint">
+          This is the heart of the letter. A thank-you. An apology.
+          Something you wish they knew. There's no wrong answer.
+        </p>
+      </div>
+      <div class="field">
+        <label for="thingsNeverSaid">Your unsaid words</label>
+        <textarea id="thingsNeverSaid" class="tall"
+          placeholder="e.g. I never told you how much your Sunday calls meant to me..."></textarea>
+      </div>
+      <button class="btn-continue" id="btnSubmit" disabled>
+        Connect to their soul
+        <span class="btn-continue__icon" aria-hidden="true">→</span>
+      </button>
+    </section>
+
+  </main>
+
+  <script>window.MOTS_API = 'http://localhost:3001';</script>
+  <!-- Three.js for companion -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="js/canvas.js"></script>
+  <script src="js/companion.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/survey.js"></script>
+  <script>
+    /* Init the floating companion bunny head */
+    window.MOTS.initCompanion('survey-bunny', { size: 96, compact: true });
+  </script>
+
+</body>
+</html>

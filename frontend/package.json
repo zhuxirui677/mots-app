@@ -1,0 +1,12 @@
+{
+  "name": "mots-frontend",
+  "version": "1.0.0",
+  "description": "MOTS — static HTML/CSS/JS frontend",
+  "scripts": {
+    "dev": "npx serve . -p 5500",
+    "build": "echo 'No build step — static files served directly by Vercel'"
+  },
+  "devDependencies": {
+    "serve": "^14.2.3"
+  }
+}

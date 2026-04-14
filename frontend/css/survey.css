@@ -1,0 +1,318 @@
+/* ═══════════════════════════════════════════════════════════════
+   survey.css — 5-step intake form
+   Inherits tokens from styles.css  (frost palette, no yellow)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Page shell ──────────────────────────────────────────────── */
+.survey-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Progress bar ────────────────────────────────────────────── */
+.progress-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  background: rgba(200,220,255,.7);
+  transition: width .5s var(--ease-out);
+  z-index: 100;
+  box-shadow: 0 0 10px rgba(150,190,255,.5);
+}
+
+/* ── Back button ─────────────────────────────────────────────── */
+.btn-back {
+  position: fixed;
+  top: 1.5rem; left: 1.5rem;
+  z-index: 50;
+  background: none;
+  border: none;
+  color: var(--clr-text-muted);
+  font-size: .8rem;
+  letter-spacing: .08em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .4rem .6rem;
+  border-radius: 8px;
+  transition: color var(--t), background var(--t);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.btn-back.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.btn-back:hover {
+  color: var(--clr-text);
+  background: rgba(255,255,255,.05);
+}
+
+/* ── Step counter ────────────────────────────────────────────── */
+.step-counter {
+  position: fixed;
+  top: 1.5rem; right: 1.5rem;
+  z-index: 50;
+  font-size: .68rem;
+  letter-spacing: .14em;
+  color: var(--clr-text-muted);
+}
+
+/* ── Steps wrapper ───────────────────────────────────────────── */
+.steps-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5rem 0 3rem;
+}
+
+/* ── Individual step ─────────────────────────────────────────── */
+.step-panel {
+  position: absolute;
+  width: min(560px, 100% - 2.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 2.25rem;
+  opacity: 0;
+  transform: translateY(32px);
+  pointer-events: none;
+  transition:
+    opacity .45s var(--ease-out),
+    transform .45s var(--ease-out);
+}
+
+.step-panel.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.step-panel.exit-up {
+  opacity: 0;
+  transform: translateY(-28px);
+  pointer-events: none;
+}
+
+/* Step header */
+.step-label {
+  font-size: .63rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--clr-text-muted);
+}
+
+.step-question {
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--clr-text);
+  margin-top: .35rem;
+}
+
+.step-hint {
+  font-size: .82rem;
+  color: var(--clr-text-muted);
+  line-height: 1.65;
+  margin-top: -.75rem;
+}
+
+/* ── Text inputs (glass style) ───────────────────────────────── */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+}
+
+.field label {
+  font-size: .7rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--clr-text-muted);
+}
+
+.field input,
+.field textarea,
+.field select {
+  background: rgba(255,255,255,.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: var(--radius);
+  color: var(--clr-text);
+  font-family: var(--font-sans);
+  font-size: .95rem;
+  padding: .8rem 1rem;
+  transition: border-color var(--t), box-shadow var(--t), background var(--t);
+  outline: none;
+  resize: none;
+  width: 100%;
+}
+
+.field input:focus,
+.field textarea:focus {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(180,210,255,.35);
+  box-shadow: 0 0 0 3px rgba(100,160,255,.07);
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--clr-text-muted);
+  opacity: .6;
+}
+
+.field textarea {
+  min-height: 140px;
+  line-height: 1.65;
+}
+
+.field textarea.tall {
+  min-height: 190px;
+}
+
+/* ── Card grid (step 2 + 3) ──────────────────────────────────── */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+}
+
+.choice-card {
+  background: rgba(255,255,255,.04);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.1rem;
+  cursor: pointer;
+  transition:
+    background var(--t),
+    border-color var(--t),
+    box-shadow var(--t);
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+}
+
+.choice-card:hover {
+  background: rgba(255,255,255,.07);
+  border-color: rgba(255,255,255,.16);
+}
+
+.choice-card.selected {
+  border-color: rgba(180,210,255,.5);
+  background: rgba(100,160,255,.08);
+  box-shadow: 0 0 0 1px rgba(180,210,255,.3), 0 4px 24px rgba(80,140,255,.1);
+}
+
+.choice-card__glyph {
+  font-size: 1.3rem;
+  line-height: 1;
+  opacity: .7;
+}
+
+.choice-card__title {
+  font-family: var(--font-serif);
+  font-size: .95rem;
+  color: var(--clr-text);
+}
+
+.choice-card__desc {
+  font-size: .73rem;
+  color: var(--clr-text-muted);
+  line-height: 1.55;
+}
+
+/* ── Continue button (glass pill) ────────────────────────────── */
+.btn-continue {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .9rem 2.25rem;
+  border-radius: var(--radius-lg);
+  background: rgba(255,255,255,.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.2);
+  color: var(--clr-text);
+  font-size: .9rem;
+  font-weight: 500;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition:
+    background var(--t),
+    border-color var(--t),
+    transform var(--t),
+    box-shadow var(--t),
+    opacity var(--t);
+}
+
+.btn-continue:disabled {
+  opacity: .28;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn-continue:not(:disabled):hover {
+  background: rgba(255,255,255,.16);
+  border-color: rgba(255,255,255,.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(100,160,255,.12);
+}
+
+.btn-continue__icon {
+  transition: transform var(--t);
+}
+
+.btn-continue:not(:disabled):hover .btn-continue__icon {
+  transform: translateX(4px);
+}
+
+/* ── Submit / loading state ──────────────────────────────────── */
+.btn-continue.loading {
+  opacity: .6;
+  cursor: wait;
+}
+
+/* ── Gemini badge inside survey header ───────────────────────── */
+.survey-gemini {
+  position: fixed;
+  top: 1.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  pointer-events: none;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .field-row { grid-template-columns: 1fr; }
+  .card-grid { grid-template-columns: 1fr 1fr; gap: .5rem; }
+  .choice-card { padding: 1rem .85rem; }
+  .btn-continue { width: 100%; justify-content: center; }
+}
