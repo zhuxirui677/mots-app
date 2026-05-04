@@ -49,6 +49,19 @@ async function pollSession(id) {
 }
 
 /**
+ * GET /api/sessions/:id/status  (lightweight poll endpoint)
+ * @returns {Promise<{ status: 'pending'|'ready'|'error', letter: string|null }>}
+ */
+async function pollStatus(id) {
+  const res = await fetch(`${BASE()}/api/sessions/${id}/status`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+/**
  * Poll until status !== 'pending', with exponential back-off.
  * Calls onTick(attempt) every poll so UI can show a progress indicator.
  *
@@ -96,4 +109,4 @@ async function sendChat(id, message) {
 }
 
 // Expose as globals for vanilla JS pages (no bundler needed)
-window.MotsAPI = { createSession, pollSession, waitForLetter, sendChat };
+window.MotsAPI = { createSession, pollSession, pollStatus, waitForLetter, sendChat };

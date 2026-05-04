@@ -238,10 +238,13 @@
   font-style: italic;
   line-height: 1.92;
   color: var(--clr-text);
-  white-space: pre-wrap;
 }
 
-.letter-body::first-letter {
+.letter-body p + p {
+  margin-top: 1.2em;
+}
+
+.letter-body p:first-child::first-letter {
   font-size: 1.55em;
   float: left;
   line-height: .85;

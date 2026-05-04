@@ -3,10 +3,10 @@
  *
  * Flow:
  *  1. Read sessionId from URL (?id=...) or sessionStorage
- *  2. Poll backend until status=ready
- *  3. Show "1 NEW MESSAGE" banner
- *  4. On tap/click → fade banner, reveal letter
- *  5. Enable chat input
+ *  2. Poll GET /api/sessions/:id/status every 2 s
+ *  3. Show "1 NEW MESSAGE" banner when ready
+ *  4. On tap/click → fade banner, reveal letter as paragraphs
+ *  5. Show "Continue the conversation" button + enable chat input
  */
 (function () {
 
@@ -18,11 +18,13 @@
   const letterSection = document.getElementById('letterSection');
   const letterFrom    = document.getElementById('letterFrom');
   const letterBody    = document.getElementById('letterBody');
+  const letterActions = document.getElementById('letterActions');
   const chatSection   = document.getElementById('chatSection');
   const chatBar       = document.getElementById('chatBar');
   const messages      = document.getElementById('messages');
   const chatInput     = document.getElementById('chatInput');
   const btnSend       = document.getElementById('btnSend');
+  const btnReply      = document.getElementById('btnReply');
   const headerName    = document.getElementById('headerName');
   const errorSection  = document.getElementById('errorSection');
 
@@ -35,7 +37,6 @@
     return;
   }
 
-  // Retrieve name for personalisation
   const cachedName = sessionStorage.getItem('mots_their_name') || '';
 
   // ── Loading text cycling ─────────────────────────────────────
@@ -52,58 +53,78 @@
     loadingText.textContent = loadingPhrases[phraseIdx];
   }, 2800);
 
-  // ── Poll until ready ─────────────────────────────────────────
-  async function init() {
-    try {
-      const session = await window.MotsAPI.waitForLetter(
-        sessionId,
-        null,
-        90_000
-      );
+  // ── Poll GET /api/sessions/:id/status every 2 s ──────────────
+  function init() {
+    let pollTimer;
+    let attempts  = 0;
+    const MAX     = 45; // 90 s at 2 s intervals
 
+    function stopPolling() {
       clearInterval(phraseTimer);
-      showNewMessage(session);
-
-    } catch (err) {
-      clearInterval(phraseTimer);
-      showError(err.message);
+      clearInterval(pollTimer);
     }
+
+    async function tick() {
+      attempts++;
+      try {
+        const { status, letter } = await window.MotsAPI.pollStatus(sessionId);
+
+        if (status === 'ready') {
+          stopPolling();
+          showNewMessage(letter);
+        } else if (status === 'error') {
+          stopPolling();
+          showError();
+        } else if (attempts >= MAX) {
+          stopPolling();
+          showError();
+        }
+      } catch (_err) {
+        stopPolling();
+        showError();
+      }
+    }
+
+    tick();
+    pollTimer = setInterval(tick, 2000);
   }
 
   // ── "1 NEW MESSAGE" banner ───────────────────────────────────
-  function showNewMessage(session) {
-    // Fade out loading screen
+  function showNewMessage(letterText) {
     loadingScreen.classList.add('fade-out');
     setTimeout(() => { loadingScreen.style.display = 'none'; }, 900);
 
-    // Populate "from" line
     const name = cachedName || 'them';
-    newMsgFrom.textContent = `From ${name}`;
-    headerName.textContent = name;
+    newMsgFrom.textContent  = `From ${name}`;
+    headerName.textContent  = name;
 
-    // Show banner
     setTimeout(() => {
       newMsgBanner.classList.add('show');
       newMsgBanner.focus();
     }, 400);
 
-    // On any click/tap — dismiss and reveal letter
     function reveal() {
       newMsgBanner.removeEventListener('click', reveal);
       newMsgBanner.removeEventListener('keydown', revealKey);
-
       newMsgBanner.classList.remove('show');
 
-      // Populate letter
-      const fromLine = cachedName
+      // Render letter as paragraphs (Gemini separates them with \n\n)
+      letterFrom.textContent = cachedName
         ? `A letter from ${cachedName}`
         : 'A letter for you';
-      letterFrom.textContent = fromLine;
-      letterBody.textContent = session.letter;
 
-      // Reveal sections
+      letterBody.innerHTML = '';
+      (letterText || '').split(/\n\n+/).forEach(para => {
+        if (!para.trim()) return;
+        const p = document.createElement('p');
+        p.textContent = para.trim();
+        letterBody.appendChild(p);
+      });
+
+      // Reveal letter + action row + chat
       setTimeout(() => {
         letterSection.classList.add('visible');
+        letterActions.style.display = '';
         chatSection.classList.add('visible');
         chatBar.style.display = '';
       }, 600);
@@ -117,17 +138,23 @@
     newMsgBanner.addEventListener('keydown', revealKey);
   }
 
+  // ── "Continue the conversation" button ───────────────────────
+  if (btnReply) {
+    btnReply.addEventListener('click', () => {
+      chatInput.focus();
+      chatInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+
   // ── Chat ─────────────────────────────────────────────────────
   let isSending = false;
 
-  // Auto-grow textarea
   chatInput.addEventListener('input', () => {
     chatInput.style.height = 'auto';
     chatInput.style.height = Math.min(chatInput.scrollHeight, 130) + 'px';
     btnSend.disabled = !chatInput.value.trim();
   });
 
-  // Send on Enter (Shift+Enter = newline)
   chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -147,17 +174,14 @@
     chatInput.value = '';
     chatInput.style.height = 'auto';
 
-    // Append user bubble
     appendMessage('user', text);
-
-    // Typing indicator
     const typingId = appendTyping();
 
     try {
       const { reply } = await window.MotsAPI.sendChat(sessionId, text);
       removeTyping(typingId);
       appendMessage('ai', reply);
-    } catch (err) {
+    } catch (_err) {
       removeTyping(typingId);
       appendMessage('ai', 'Something went quiet for a moment. Try again?');
     }
@@ -181,8 +205,6 @@
 
     wrap.append(roleLabel, bubble);
     messages.appendChild(wrap);
-
-    // Scroll into view
     wrap.scrollIntoView({ behavior: 'smooth', block: 'end' });
     return wrap;
   }
@@ -190,7 +212,7 @@
   let typingCounter = 0;
 
   function appendTyping() {
-    const id = `typing-${++typingCounter}`;
+    const id   = `typing-${++typingCounter}`;
     const wrap = document.createElement('div');
     wrap.className = 'msg msg--ai msg--typing';
     wrap.id = id;
@@ -219,11 +241,10 @@
   }
 
   // ── Error ────────────────────────────────────────────────────
-  function showError(msg) {
+  function showError() {
     loadingScreen.classList.add('fade-out');
     setTimeout(() => { loadingScreen.style.display = 'none'; }, 900);
     errorSection.style.display = '';
-    console.error('MOTS error:', msg);
   }
 
   // ── Start ────────────────────────────────────────────────────
