@@ -13,8 +13,13 @@
  * or you can hardcode the Render URL here once it's stable.
  */
 
-const BASE = () =>
-  (window.MOTS_API || 'http://localhost:3001').replace(/\/$/, '');
+const BASE = () => {
+  const api = window.MOTS_API;
+  // null/undefined = MOTS_API was never set; fall back to local dev server
+  // '' (empty string) = production; requests go to the same origin (Vercel proxy)
+  if (api == null) return 'http://localhost:3001';
+  return api.replace(/\/$/, '');
+};
 
 /**
  * POST /api/sessions

@@ -146,6 +146,125 @@
     });
   }
 
+  // ── Toast notification helper ────────────────────────────────
+  function showToast(message) {
+    const existing = document.getElementById('mots-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'mots-toast';
+    toast.textContent = message;
+    toast.style.cssText = [
+      'position:fixed',
+      'bottom:calc(env(safe-area-inset-bottom, 0px) + 6rem)',
+      'left:50%',
+      'transform:translateX(-50%)',
+      'background:rgba(30,40,60,.92)',
+      'backdrop-filter:blur(16px)',
+      '-webkit-backdrop-filter:blur(16px)',
+      'border:1px solid rgba(180,210,255,.2)',
+      'color:rgba(220,235,255,.9)',
+      'font-size:.72rem',
+      'letter-spacing:.08em',
+      'padding:.5rem 1.2rem',
+      'border-radius:100px',
+      'z-index:300',
+      'pointer-events:none',
+      'white-space:nowrap',
+      'opacity:0',
+      'transition:opacity .25s',
+    ].join(';');
+
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => { toast.style.opacity = '1'; });
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 2800);
+  }
+
+  // ── "Save to memories" button ────────────────────────────────
+  const btnSaveMemory = document.getElementById('btnSaveMemory');
+  if (btnSaveMemory) {
+    btnSaveMemory.addEventListener('click', () => {
+      const paragraphs = Array.from(letterBody.querySelectorAll('p'));
+      const text = paragraphs.map(p => p.textContent.trim()).join('\n\n');
+      if (!text) return;
+
+      const memories = JSON.parse(localStorage.getItem('mots_memories') || '[]');
+      memories.unshift({
+        savedAt: new Date().toISOString(),
+        name: cachedName || 'Unknown',
+        letter: text,
+      });
+      localStorage.setItem('mots_memories', JSON.stringify(memories));
+
+      btnSaveMemory.textContent = '✓ saved';
+      btnSaveMemory.disabled = true;
+      showToast('Letter saved to memories');
+    });
+  }
+
+  // ── Mic / voice-input button ─────────────────────────────────
+  const btnMic = document.getElementById('btnMic');
+  if (btnMic) {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      btnMic.title = 'Voice input not supported in this browser';
+      btnMic.style.opacity = '.3';
+      btnMic.style.cursor = 'not-allowed';
+    } else {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      let isRecording = false;
+
+      btnMic.addEventListener('click', () => {
+        if (isRecording) {
+          recognition.stop();
+          return;
+        }
+        try {
+          recognition.start();
+        } catch (_e) {
+          // recognition already started (can happen on rapid clicks)
+        }
+      });
+
+      recognition.addEventListener('start', () => {
+        isRecording = true;
+        btnMic.classList.add('recording');
+        btnMic.setAttribute('aria-label', 'Stop recording');
+        showToast('Listening…');
+      });
+
+      recognition.addEventListener('result', (e) => {
+        const transcript = e.results[0][0].transcript;
+        chatInput.value = (chatInput.value + ' ' + transcript).trimStart();
+        chatInput.dispatchEvent(new Event('input'));
+      });
+
+      recognition.addEventListener('end', () => {
+        isRecording = false;
+        btnMic.classList.remove('recording');
+        btnMic.setAttribute('aria-label', 'Voice input');
+      });
+
+      recognition.addEventListener('error', (e) => {
+        isRecording = false;
+        btnMic.classList.remove('recording');
+        btnMic.setAttribute('aria-label', 'Voice input');
+        if (e.error !== 'no-speech' && e.error !== 'aborted') {
+          showToast('Microphone error — please try again');
+        }
+      });
+    }
+  }
+
   // ── Chat ─────────────────────────────────────────────────────
   let isSending = false;
 

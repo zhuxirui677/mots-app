@@ -118,7 +118,14 @@
     </div>
   </div>
 
-  <script>window.MOTS_API = 'http://localhost:3001';</script>
+  <script>
+    // Empty string → requests stay on same origin → Vercel proxies /api/* to Render.
+    // localhost/127.0.0.1 → talk directly to the local dev server.
+    window.MOTS_API = (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+    ) ? 'http://localhost:3001' : '';
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script src="js/canvas.js"></script>
   <script src="js/companion.js"></script>
