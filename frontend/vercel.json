@@ -3,7 +3,7 @@
   "trailingSlash": false,
   "rewrites": [
     { "source": "/survey", "destination": "/survey.html" },
-    { "source": "/api/:path*", "destination": "https://mots-backend.onrender.com/api/:path*" }
+    { "source": "/api/:path*", "destination": "https://mots-app.onrender.com/api/:path*" }
   ],
   "headers": [
     {
