@@ -10,4 +10,5 @@ RUN npx prisma generate
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+# Start server directly — migrations should be run manually or via Render job
+CMD ["node", "server.js"]
