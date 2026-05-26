@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
@@ -10,5 +10,4 @@ RUN npx prisma generate
 
 EXPOSE 3001
 
-# Start server directly — migrations should be run manually or via Render job
 CMD ["node", "server.js"]
