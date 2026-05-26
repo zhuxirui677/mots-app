@@ -21,11 +21,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-          cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Generate Prisma client
         run: npx prisma generate
@@ -50,23 +48,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-          cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: npm audit (fail on high/critical)
         run: npm audit --audit-level=high
 
       - name: Scan for hardcoded secrets
-        # Fail if any real-looking key patterns are found outside of .env.example
-        # and test fixture files.
         run: |
           echo "Scanning for potential hardcoded secrets..."
           FOUND=0
-
-          # Patterns: API key assignments with non-placeholder values
           if grep -rn \
                --include="*.js" --include="*.ts" --include="*.json" \
                --exclude-dir=node_modules --exclude-dir=__tests__ \
@@ -79,13 +71,10 @@ jobs:
             echo "::error::Potential hardcoded secret found — rotate keys and use env vars."
             FOUND=1
           fi
-
-          # Check .env is not tracked
           if git ls-files --error-unmatch .env 2>/dev/null; then
             echo "::error::.env file is committed — remove it immediately and rotate all keys."
             FOUND=1
           fi
-
           if [ "$FOUND" -eq 1 ]; then exit 1; fi
           echo "No hardcoded secrets detected."
 
