@@ -7,32 +7,31 @@
  */
 
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
 const { PrismaClient } = require('@prisma/client');
 const { generateLetterAndProfile, chatReply } = require('../services/gemini');
+const { matchTemplate } = require('../services/templateMatcher');
 
 const router  = express.Router();
 const prisma  = new PrismaClient();
 
 // ── POST /sessions ────────────────────────────────────────────
-// Body: { name, pronouns, relationship, coreValue,
+// Body: { name, nickname, pronouns, relationship, coreValue,
 //         emotionalWeather, thingsNeverSaid, chatSample }
 router.post('/', async (req, res) => {
   const {
-    name, pronouns, relationship,
+    name, nickname, pronouns, relationship,
     coreValue, emotionalWeather,
     thingsNeverSaid, chatSample,
   } = req.body;
 
-  // Basic validation — all fields required except chatSample
-  if (!name || !relationship || !thingsNeverSaid) {
+  if (!name || !nickname || !coreValue || !emotionalWeather || !thingsNeverSaid) {
     return res.status(400).json({
-      error: 'name, relationship, and thingsNeverSaid are required',
+      error: 'name, nickname, coreValue, emotionalWeather, and thingsNeverSaid are required',
     });
   }
 
   const surveyInputs = {
-    name, pronouns, relationship,
+    name, nickname, pronouns, relationship,
     coreValue, emotionalWeather,
     thingsNeverSaid,
     chatSample: chatSample || '',
@@ -120,7 +119,14 @@ router.post('/:id/chat', async (req, res) => {
 // ── Internal: run Gemini generation and update DB ─────────────
 async function _runGeneration(sessionId, surveyInputs) {
   try {
-    const { letter, personaProfile } = await generateLetterAndProfile(surveyInputs);
+    // Look up archetype template — enriches the Gemini prompt with baseline traits.
+    // Returns null gracefully if no match or DB unavailable.
+    const template = await matchTemplate(surveyInputs.relationship);
+    if (template) {
+      console.log(`[session ${sessionId}] Matched persona template: ${template.key}`);
+    }
+
+    const { letter, personaProfile } = await generateLetterAndProfile(surveyInputs, template);
 
     await prisma.session.update({
       where: { id: sessionId },
