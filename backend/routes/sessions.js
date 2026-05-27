@@ -24,9 +24,9 @@ router.post('/', async (req, res) => {
     thingsNeverSaid, chatSample,
   } = req.body;
 
-  if (!name || !nickname || !coreValue || !emotionalWeather || !thingsNeverSaid) {
+  if (!name || !relationship || !thingsNeverSaid) {
     return res.status(400).json({
-      error: 'name, nickname, coreValue, emotionalWeather, and thingsNeverSaid are required',
+      error: 'name, relationship, and thingsNeverSaid are required',
     });
   }
 
