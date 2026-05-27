@@ -31,7 +31,7 @@ model Session {
   created_at DateTime @default(now())
 
   // Raw answers from the 5-step intake survey.
-  // Shape: { name, pronouns, relationship, coreValue, emotionalWeather,
+  // Shape: { name, nickname, pronouns, relationship, coreValue, emotionalWeather,
   //          thingsNeverSaid, chatSample }
   survey_inputs Json @db.JsonB
 
@@ -55,4 +55,21 @@ model Session {
   error_message String?
 
   @@map("sessions")
+}
+
+// ── Persona archetype templates ───────────────────────────────────────────────
+// Seeded once at deploy time via prisma/seed.js.
+// Matched by keyword against survey_inputs.relationship.
+
+model PersonaTemplate {
+  id             Int      @id @default(autoincrement())
+  key            String   @unique          // e.g. "grandmother"
+  labels         String[]                  // matching keywords (lowercase)
+  archetype      String                    // 1–2 sentence role description
+  speaking_style String                    // rhythm, formality, punctuation
+  verbal_quirks  String                    // tics, phrases, sign-offs
+  core_traits    String                    // values, personality essence
+  memory_topics  String                    // typical shared experiences
+
+  @@map("persona_templates")
 }
