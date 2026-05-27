@@ -10,9 +10,12 @@ const mockCreate     = jest.fn();
 const mockFindUnique = jest.fn();
 const mockUpdate     = jest.fn();
 
+const mockTemplateFindMany = jest.fn().mockResolvedValue([]);
+
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
-    session: { create: mockCreate, findUnique: mockFindUnique, update: mockUpdate },
+    session:         { create: mockCreate, findUnique: mockFindUnique, update: mockUpdate },
+    personaTemplate: { findMany: mockTemplateFindMany },
   })),
 }));
 
@@ -49,6 +52,7 @@ describe('Unknown routes', () => {
 });
 
 // ── POST /api/sessions — input validation ─────────────────────
+// Backend requires: name, relationship, thingsNeverSaid
 describe('POST /api/sessions — validation', () => {
   test('returns 400 when name is missing', async () => {
     const res = await request(app)
