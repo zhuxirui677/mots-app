@@ -39,7 +39,7 @@ You must return ONLY valid JSON — no markdown fences, no extra text — in exa
 
 {
   "letter": "<the full personal letter, 3-5 paragraphs, written AS the deceased person TO the user>",
-  "personaProfile": {
+  "persona": {
     "speakingStyle": "<short description of how they spoke: rhythm, formality, punctuation habits>",
     "verbalQuirks": "<verbal tics, favourite phrases, emoji habits, signature sign-offs, etc.>",
     "values": "<what mattered most to them, 1-2 sentences>",
@@ -59,12 +59,13 @@ Guidelines for the letter:
 `.trim();
 
 /**
- * @param {object} survey  — shape: { name, pronouns, relationship,
- *                            coreValue, emotionalWeather,
- *                            thingsNeverSaid, chatSample }
+ * @param {object}      survey    — shape: { name, nickname, pronouns, relationship,
+ *                                   coreValue, emotionalWeather,
+ *                                   thingsNeverSaid, chatSample }
+ * @param {object|null} template  — PersonaTemplate row from DB, or null
  * @returns {{ letter: string, personaProfile: object }}
  */
-async function generateLetterAndProfile(survey) {
+async function generateLetterAndProfile(survey, template = null) {
   const model = genAI.getGenerativeModel({
     model: MODEL,
     systemInstruction: LETTER_SYSTEM,
@@ -75,7 +76,23 @@ async function generateLetterAndProfile(survey) {
     },
   });
 
-  const prompt = `Here is the user's survey input:\n${JSON.stringify(survey, null, 2)}`;
+  let prompt = `Here is the user's survey input:\n${JSON.stringify(survey, null, 2)}`;
+
+  // Merge archetype baseline when available.
+  // The survey data always takes precedence — the template is a starting foundation.
+  if (template) {
+    prompt += `
+
+ARCHETYPAL BASELINE — relationship type matched: "${template.key}"
+Use the following as a realistic foundation. Let the specific survey data above
+override and personalise every detail — these are defaults, not constraints.
+
+- Archetype: ${template.archetype}
+- Typical speaking style: ${template.speaking_style}
+- Common verbal quirks: ${template.verbal_quirks}
+- Core personality traits: ${template.core_traits}
+- Typical memory topics: ${template.memory_topics}`;
+  }
 
   const result = await model.generateContent(prompt);
   const raw    = result.response.text();
@@ -88,13 +105,13 @@ async function generateLetterAndProfile(survey) {
     throw new Error(`Gemini returned invalid JSON: ${clean.slice(0, 200)}`);
   }
 
-  if (!parsed.letter || !parsed.personaProfile) {
-    throw new Error('Gemini response missing letter or personaProfile fields');
+  if (!parsed.letter || !parsed.persona) {
+    throw new Error('Gemini response missing letter or persona fields');
   }
 
   return {
-    letter:        parsed.letter,
-    personaProfile: parsed.personaProfile,
+    letter:         parsed.letter,
+    personaProfile: parsed.persona,
   };
 }
 
