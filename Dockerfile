@@ -12,5 +12,5 @@ RUN npx prisma generate
 
 EXPOSE 3001
 
-# Run migrations + seed templates, then start server
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node server.js"]
+# migrate + seed are best-effort; server starts even if DB is waking up
+CMD ["sh", "-c", "(npx prisma migrate deploy || true) && (npx prisma db seed || true) && node server.js"]
