@@ -6,13 +6,18 @@ const cors    = require('cors');
 const app = express();
 
 // ── CORS ──────────────────────────────────────────────────────
-const allowedOrigin = process.env.FRONTEND_ORIGIN;
+// Always allow the production Vercel domain so the browser can hit Render
+// directly (bypassing Vercel's 10-second proxy timeout on free tier).
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_ORIGIN,
+  'https://mots-app-backend.vercel.app',
+].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
-      if (origin === allowedOrigin) return callback(null, true);
+      if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
       callback(new Error(`CORS: origin '${origin}' not allowed`));
     },
     methods: ['GET', 'POST', 'OPTIONS'],
