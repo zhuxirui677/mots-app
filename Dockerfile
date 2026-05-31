@@ -12,5 +12,6 @@ RUN npx prisma generate
 
 EXPOSE 3001
 
-# migrate + seed are best-effort; server starts even if DB is waking up
-CMD ["sh", "-c", "(npx prisma migrate deploy || true) && (npx prisma db seed || true) && node server.js"]
+# server.js starts immediately (health check passes) then retries migrations
+# async until Neon DB wakes up — no blocking at container start
+CMD ["node", "server.js"]
