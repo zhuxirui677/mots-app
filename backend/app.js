@@ -48,8 +48,8 @@ app.get('/health/db', async (_req, res) => {
 });
 
 // ── API key guard ─────────────────────────────────────────────
-if (!process.env.GEMINI_API_KEY) {
-  console.error('FATAL: GEMINI_API_KEY environment variable is not set. Exiting.');
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('FATAL: ANTHROPIC_API_KEY environment variable is not set. Exiting.');
   process.exit(1);
 }
 
