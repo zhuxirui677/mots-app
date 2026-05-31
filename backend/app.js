@@ -28,6 +28,20 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ── DB diagnostic (temporary) ─────────────────────────────────
+app.get('/health/db', async (_req, res) => {
+  const { PrismaClient } = require('@prisma/client');
+  const p = new PrismaClient();
+  try {
+    await p.$queryRaw`SELECT 1`;
+    res.json({ db: 'ok', DATABASE_URL: process.env.DATABASE_URL ? 'set' : 'MISSING' });
+  } catch (err) {
+    res.status(500).json({ db: 'error', message: err.message, DATABASE_URL: process.env.DATABASE_URL ? 'set' : 'MISSING' });
+  } finally {
+    await p.$disconnect();
+  }
+});
+
 // ── API key guard ─────────────────────────────────────────────
 if (!process.env.GEMINI_API_KEY) {
   console.error('FATAL: GEMINI_API_KEY environment variable is not set. Exiting.');
