@@ -178,9 +178,9 @@
     submitBtn.textContent = 'Connecting…';
     submitBtn.disabled = true;
 
-    // Retry up to 3 times with 8s gaps to handle Render cold-start (502/503)
+    // Retry up to 6 times with 12s gaps — Render free tier can take ~60s to wake
     let lastErr;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 6; attempt++) {
       try {
         const { id } = await window.MotsAPI.createSession(surveyData);
         sessionStorage.setItem('mots_session_id', id);
@@ -190,9 +190,9 @@
       } catch (err) {
         lastErr = err;
         console.warn(`[attempt ${attempt}] createSession failed:`, err.message);
-        if (attempt < 3) {
-          submitBtn.textContent = `Server waking up… (${attempt}/3)`;
-          await new Promise(r => setTimeout(r, 8000));
+        if (attempt < 6) {
+          submitBtn.textContent = `Server waking up… (${attempt}/6)`;
+          await new Promise(r => setTimeout(r, 12000));
           submitBtn.textContent = 'Connecting…';
         }
       }
