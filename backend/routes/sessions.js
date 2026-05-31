@@ -14,10 +14,14 @@ const { matchTemplate } = require('../services/templateMatcher');
 const router  = express.Router();
 const prisma  = new PrismaClient();
 
+// Wrap async route handlers so unhandled rejections go to Express error handler
+// instead of crashing the Node 20 process.
+const wrap = fn => (req, res, next) => fn(req, res, next).catch(next);
+
 // ── POST /sessions ────────────────────────────────────────────
 // Body: { name, nickname, pronouns, relationship, coreValue,
 //         emotionalWeather, thingsNeverSaid, chatSample }
-router.post('/', async (req, res) => {
+router.post('/', wrap(async (req, res) => {
   const {
     name, nickname, pronouns, relationship,
     coreValue, emotionalWeather,
@@ -46,12 +50,12 @@ router.post('/', async (req, res) => {
   setImmediate(() => _runGeneration(session.id, surveyInputs));
 
   return res.status(202).json({ id: session.id, status: 'pending' });
-});
+}));
 
 // ── GET /sessions/:id/status ──────────────────────────────────
 // Lightweight poll endpoint — returns only { status, letter }.
 // Used by the frontend polling loop; never exposes survey data or persona.
-router.get('/:id/status', async (req, res) => {
+router.get('/:id/status', wrap(async (req, res) => {
   const session = await prisma.session.findUnique({
     where:  { id: req.params.id },
     select: { status: true, letter: true },
@@ -60,11 +64,11 @@ router.get('/:id/status', async (req, res) => {
   if (!session) return res.status(404).json({ error: 'Session not found' });
 
   return res.json({ status: session.status, letter: session.letter ?? null });
-});
+}));
 
 // ── GET /sessions/:id ─────────────────────────────────────────
 // Returns status + letter once ready.
-router.get('/:id', async (req, res) => {
+router.get('/:id', wrap(async (req, res) => {
   const session = await prisma.session.findUnique({
     where: { id: req.params.id },
     select: {
@@ -76,11 +80,11 @@ router.get('/:id', async (req, res) => {
   if (!session) return res.status(404).json({ error: 'Session not found' });
 
   return res.json(session);
-});
+}));
 
 // ── POST /sessions/:id/chat ───────────────────────────────────
 // Body: { message: string }
-router.post('/:id/chat', async (req, res) => {
+router.post('/:id/chat', wrap(async (req, res) => {
   const { message } = req.body;
   if (!message || !message.trim()) {
     return res.status(400).json({ error: 'message is required' });
@@ -114,7 +118,7 @@ router.post('/:id/chat', async (req, res) => {
   });
 
   return res.json({ reply });
-});
+}));
 
 // ── Internal: run Gemini generation and update DB ─────────────
 async function _runGeneration(sessionId, surveyInputs) {
