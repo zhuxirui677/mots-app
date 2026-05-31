@@ -1,32 +1,22 @@
 /**
- * gemini.js — MOTS Gemini service
- *
- * Model: gemini-2.0-flash   (fast, high quality, supports systemInstruction)
- * All calls are server-side only. The API key never reaches the browser.
+ * gemini.js — MOTS AI service (powered by Claude / Anthropic)
  *
  * Two exported functions:
- *   generateLetterAndProfile(surveyInputs)  → { letter, personaProfile }
- *   chatReply(personaProfile, history, userMessage) → string
+ *   generateLetterAndProfile(surveyInputs, template) → { letter, personaProfile }
+ *   chatReply(personaProfile, history, userMessage)  → string
  */
 
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Anthropic = require('@anthropic-ai/sdk');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// ── Model ─────────────────────────────────────────────────────
-// gemini-2.0-flash: fast, cheap, supports systemInstruction + JSON mode
-const MODEL = 'gemini-2.0-flash';
+const LETTER_MODEL = 'claude-sonnet-4-6';
+const CHAT_MODEL   = 'claude-haiku-4-5-20251001';
 
-// ── Helpers ───────────────────────────────────────────────────
-
-/**
- * Strip markdown code fences that Gemini sometimes wraps around JSON.
- * e.g.  ```json\n{...}\n```  →  {...}
- */
 function stripFences(text) {
   return text
     .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```\s*$/,        '')
+    .replace(/\s*```\s*$/, '')
     .trim();
 }
 
@@ -45,7 +35,7 @@ You must return ONLY valid JSON — no markdown fences, no extra text — in exa
     "values": "<what mattered most to them, 1-2 sentences>",
     "memories": "<2-3 specific memories or topics they would naturally reference>",
     "emotionalTone": "<one of: reserved / warm / effusive>",
-    "systemPromptText": "<2-4 sentence instruction block used as systemInstruction for follow-up chat, written in second person as 'You are ...' — capture voice, quirks, and emotional register>"
+    "systemPromptText": "<2-4 sentence instruction block used as system prompt for follow-up chat, written in second person as 'You are ...' — capture voice, quirks, and emotional register>"
   }
 }
 
@@ -58,30 +48,11 @@ Guidelines for the letter:
 - Do NOT add any text outside the JSON object.
 `.trim();
 
-/**
- * @param {object}      survey    — shape: { name, nickname, pronouns, relationship,
- *                                   coreValue, emotionalWeather,
- *                                   thingsNeverSaid, chatSample }
- * @param {object|null} template  — PersonaTemplate row from DB, or null
- * @returns {{ letter: string, personaProfile: object }}
- */
 async function generateLetterAndProfile(survey, template = null) {
-  const model = genAI.getGenerativeModel({
-    model: MODEL,
-    systemInstruction: LETTER_SYSTEM,
-    generationConfig: {
-      temperature:     0.85,
-      maxOutputTokens: 1800,
-      responseMimeType: 'application/json',
-    },
-  });
+  let userPrompt = `Here is the user's survey input:\n${JSON.stringify(survey, null, 2)}`;
 
-  let prompt = `Here is the user's survey input:\n${JSON.stringify(survey, null, 2)}`;
-
-  // Merge archetype baseline when available.
-  // The survey data always takes precedence — the template is a starting foundation.
   if (template) {
-    prompt += `
+    userPrompt += `
 
 ARCHETYPAL BASELINE — relationship type matched: "${template.key}"
 Use the following as a realistic foundation. Let the specific survey data above
@@ -94,19 +65,25 @@ override and personalise every detail — these are defaults, not constraints.
 - Typical memory topics: ${template.memory_topics}`;
   }
 
-  const result = await model.generateContent(prompt);
-  const raw    = result.response.text();
-  const clean  = stripFences(raw);
+  const response = await client.messages.create({
+    model:      LETTER_MODEL,
+    max_tokens: 1800,
+    system:     LETTER_SYSTEM,
+    messages:   [{ role: 'user', content: userPrompt }],
+  });
+
+  const raw   = response.content[0].text;
+  const clean = stripFences(raw);
 
   let parsed;
   try {
     parsed = JSON.parse(clean);
   } catch (err) {
-    throw new Error(`Gemini returned invalid JSON: ${clean.slice(0, 200)}`);
+    throw new Error(`Claude returned invalid JSON: ${clean.slice(0, 200)}`);
   }
 
   if (!parsed.letter || !parsed.persona) {
-    throw new Error('Gemini response missing letter or persona fields');
+    throw new Error('Claude response missing letter or persona fields');
   }
 
   return {
@@ -117,39 +94,31 @@ override and personalise every detail — these are defaults, not constraints.
 
 // ── Step 2: follow-up chat ────────────────────────────────────
 
-/**
- * Send one user message and receive one short in-voice reply.
- *
- * @param {object} personaProfile  — from Step 1
- * @param {Array}  history         — Gemini history format:
- *                                   [{ role: 'user'|'model', parts: [{ text }] }]
- * @param {string} userMessage
- * @returns {string} the model's reply text
- */
 async function chatReply(personaProfile, history, userMessage) {
-  const model = genAI.getGenerativeModel({
-    model: MODEL,
-    systemInstruction: personaProfile.systemPromptText,
-    generationConfig: {
-      temperature:     0.85,
-      maxOutputTokens: 220,   // keep replies short — 1-3 sentences
-    },
-  });
+  const messages = [];
 
-  // Gemini requires history to start with a user turn.
-  // If history is empty, seed it with a short placeholder.
-  let safeHistory = history;
-  if (!history.length || history[0].role !== 'user') {
-    safeHistory = [
-      { role: 'user',  parts: [{ text: 'I read your letter.' }] },
-      { role: 'model', parts: [{ text: 'I\'m glad you did.' }] },
-      ...history,
-    ];
+  if (!history.length) {
+    messages.push({ role: 'user',      content: 'I read your letter.' });
+    messages.push({ role: 'assistant', content: "I'm glad you did." });
+  } else {
+    for (const turn of history) {
+      messages.push({
+        role:    turn.role === 'model' ? 'assistant' : 'user',
+        content: turn.parts[0].text,
+      });
+    }
   }
 
-  const chat = model.startChat({ history: safeHistory });
-  const result = await chat.sendMessage(userMessage);
-  return result.response.text().trim();
+  messages.push({ role: 'user', content: userMessage });
+
+  const response = await client.messages.create({
+    model:      CHAT_MODEL,
+    max_tokens: 220,
+    system:     personaProfile.systemPromptText,
+    messages,
+  });
+
+  return response.content[0].text.trim();
 }
 
 module.exports = { generateLetterAndProfile, chatReply };
