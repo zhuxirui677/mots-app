@@ -42,6 +42,11 @@
     current = next;
     setProgress(current);
 
+    // Update companion particle theme
+    if (window.MOTS && window.MOTS.setCompanionStep) {
+      window.MOTS.setCompanionStep(current);
+    }
+
     // Focus first input in new step
     const firstInput = to.querySelector('input:not([type=radio]), textarea');
     if (firstInput) setTimeout(() => firstInput.focus(), 100);
@@ -49,22 +54,22 @@
 
   // ── Step 1 validation ─────────────────────────────────────────
 
-  const nameInput         = document.getElementById('theirName');
-  const relationshipInput = document.getElementById('relationship');
-  const next1Btn          = document.getElementById('next1');
+  const nameInput     = document.getElementById('theirName');
+  const nicknameInput = document.getElementById('theirNickname');
+  const next1Btn      = document.getElementById('next1');
 
   function validateStep1() {
-    next1Btn.disabled = !(nameInput.value.trim() && relationshipInput.value.trim());
+    next1Btn.disabled = !(nameInput.value.trim() && nicknameInput.value.trim());
   }
 
   nameInput.addEventListener('input', validateStep1);
-  relationshipInput.addEventListener('input', validateStep1);
+  nicknameInput.addEventListener('input', validateStep1);
 
   next1Btn.addEventListener('click', () => goTo(2));
 
   // Allow Enter key to advance
-  [nameInput, relationshipInput,
-   document.getElementById('theirNickname'),
+  [nameInput, nicknameInput,
+   document.getElementById('relationship'),
    document.getElementById('yourPronouns')].forEach(el => {
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !next1Btn.disabled) goTo(2);
@@ -135,9 +140,16 @@
 
   next3Btn.addEventListener('click', () => goTo(4));
 
-  // ── Step 4: Chat sample (optional) ───────────────────────────
+  // ── Step 4: Chat sample (required) ───────────────────────────
 
-  document.getElementById('next4').addEventListener('click', () => goTo(5));
+  const chatSampleTextarea = document.getElementById('chatSample');
+  const next4Btn           = document.getElementById('next4');
+
+  chatSampleTextarea.addEventListener('input', () => {
+    next4Btn.disabled = !chatSampleTextarea.value.trim();
+  });
+
+  next4Btn.addEventListener('click', () => goTo(5));
 
   // ── Step 5: Unsaid words + submit ────────────────────────────
 
@@ -166,21 +178,34 @@
     submitBtn.textContent = 'Connecting…';
     submitBtn.disabled = true;
 
-    try {
-      const { id } = await window.MotsAPI.createSession(surveyData);
-      sessionStorage.setItem('mots_session_id', id);
-      sessionStorage.setItem('mots_their_name', surveyData.name);
-      window.location.href = `letter.html?id=${id}`;
-    } catch (err) {
-      console.error(err);
-      submitBtn.classList.remove('loading');
-      submitBtn.textContent = 'Something went wrong — try again';
-      submitBtn.disabled = false;
-      setTimeout(() => {
-        submitBtn.innerHTML = 'Connect to their soul <span class="btn-continue__icon" aria-hidden="true">→</span>';
-        submitBtn.disabled = !unsaidTextarea.value.trim();
-      }, 3000);
+    // Retry up to 3 times with 8s gaps to handle Render cold-start (502/503)
+    let lastErr;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const { id } = await window.MotsAPI.createSession(surveyData);
+        sessionStorage.setItem('mots_session_id', id);
+        sessionStorage.setItem('mots_their_name', surveyData.name);
+        window.location.href = `letter.html?id=${id}`;
+        return;
+      } catch (err) {
+        lastErr = err;
+        console.warn(`[attempt ${attempt}] createSession failed:`, err.message);
+        if (attempt < 3) {
+          submitBtn.textContent = `Server waking up… (${attempt}/3)`;
+          await new Promise(r => setTimeout(r, 8000));
+          submitBtn.textContent = 'Connecting…';
+        }
+      }
     }
+
+    console.error(lastErr);
+    submitBtn.classList.remove('loading');
+    submitBtn.textContent = 'Something went wrong — try again';
+    submitBtn.disabled = false;
+    setTimeout(() => {
+      submitBtn.innerHTML = 'Connect to their soul <span class="btn-continue__icon" aria-hidden="true">→</span>';
+      submitBtn.disabled = !unsaidTextarea.value.trim();
+    }, 3000);
   });
 
   // ── Back button ───────────────────────────────────────────────
