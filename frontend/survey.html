@@ -74,12 +74,12 @@
             <input id="theirName" type="text" placeholder="e.g. Grandma Rose" autocomplete="off"/>
           </div>
           <div class="field">
-            <label for="theirNickname">What they called you <span style="opacity:.42">(optional)</span></label>
+            <label for="theirNickname">What they called you</label>
             <input id="theirNickname" type="text" placeholder="e.g. Sunshine, Kiddo" autocomplete="off"/>
           </div>
         </div>
         <div class="field">
-          <label for="relationship">Your relationship</label>
+          <label for="relationship">Your relationship <span style="opacity:.42">(optional)</span></label>
           <input id="relationship" type="text" placeholder="e.g. My grandmother, my best friend, my dad" autocomplete="off"/>
         </div>
         <div class="field">
@@ -179,11 +179,11 @@
         </p>
       </div>
       <div class="field">
-        <label for="chatSample">Their words <span style="opacity:.42">(optional but makes a big difference)</span></label>
+        <label for="chatSample">Their words</label>
         <textarea id="chatSample" class="tall"
           placeholder="e.g.&#10;hey!! did you eat today?? don't forget to take care of yourself ok&#10;love u lots 💛&#10;&#10;— or any real message they sent you"></textarea>
       </div>
-      <button class="btn-continue" id="next4">
+      <button class="btn-continue" id="next4" disabled>
         Continue <span class="btn-continue__icon" aria-hidden="true">→</span>
       </button>
     </section>
@@ -212,12 +212,12 @@
   </main>
 
   <script>
-    // Empty string → requests stay on same origin → Vercel proxies /api/* to Render.
-    // localhost/127.0.0.1 → talk directly to the local dev server.
+    // In production hit Render directly so browser isn't subject to Vercel's
+    // 10-second proxy timeout (Render free tier can take ~60s to wake).
     window.MOTS_API = (
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1'
-    ) ? 'http://localhost:3001' : '';
+    ) ? 'http://localhost:3001' : 'https://mots-app.onrender.com';
   </script>
   <!-- Three.js for companion -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
